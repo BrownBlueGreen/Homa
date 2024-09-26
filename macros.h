@@ -1,0 +1,4 @@
+#define RAM_SIZE  (192 * 1000) /* 192KB */
+#define RAM_START 0x20000000U
+#define RAM_END   (RAM_START + RAM_SIZE)
+#define STACK_START RAM_END
