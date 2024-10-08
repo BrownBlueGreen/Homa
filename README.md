@@ -1,7 +1,7 @@
 AUTHOR: Babak Khorsand
 DATE:   09/23/2024
 
-PROJECT HOMA VERSION 0.1
+PROJECT HOMA VERSION 0.3
 
 This project is for a real time operating system for ARM microcontrollers. 
 
@@ -257,3 +257,9 @@ Implementation for this was taken from ST github account for stm32f429. the link
 Ok here the basics of baremetal startup and getting the exectution to main is complete. The next things to do to define system_init and some basic hardware files. 
 
 These should include a bunch of macros and copmiler stuff that I won't do by hand it's too much work, plus it has specifics i don't know about. 
+
+Other stuff to do later:
+
+Write kernel
+Write some basic data structs b/c i don't want to use c++ stdlib
+Write prepipheral driverse, make it threadsafe 

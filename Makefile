@@ -9,7 +9,7 @@ LDFLAGS = -mfloat-abi=hard -mcpu=$(MACH) $(INST) --specs=nano.specs -T linker_sc
 # \tab receipt
 # some notes:
 # $^ --> This means replace with depency and $@ means target
-all:main.o startup.o syscalls.o sysmem.o final.elf
+all:main.o startup.o syscalls.o sysmem.o sysinit.o final.elf
 
 main.o : main.cpp
 		$(CC) $(CFLAGS) $^ -o $@
@@ -23,7 +23,10 @@ syscalls.o : syscalls.cpp
 sysmem.o : sysmem.cpp
 		$(CC) $(CFLAGS) $^ -o $@
 
-final.elf: main.o startup.o syscalls.o sysmem.o
+sysinit.o : sysinit.cpp
+		$(CC) $(CFLAGS) $^ -o $@
+
+final.elf: main.o startup.o syscalls.o sysmem.o sysinit.o
 		$(CC) $(LDFLAGS) $^ -o $@
 
 clean:

@@ -13,7 +13,7 @@ _Min_Stack_Size = 0x400;
 
 /* Define the memory regions */
 MEMORY {
-  ROM     (rx)  : ORIGIN = 0x08000000, LENGTH = 2048K
+  ROM     (rx)  : ORIGIN = 0x08000000, LENGTH = 512K
   CCMRAM  (xrw) : ORIGIN = 0x10000000, LENGTH = 64K
   RAM     (xrw) : ORIGIN = 0x20000000, LENGTH = 192K
 }

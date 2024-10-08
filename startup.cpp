@@ -1,119 +1,123 @@
-#include <cstdint>
-#include "macros.h"
+#include "homa_base.h"
 
+
+extern int main();
+extern void SystemInit();
+extern void SystemCoreClockUpdate();
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-extern int main();
-extern void system_init();
 extern void __libc_init_array();
 extern void __libc_fini_array();
-
-/* Function definitions */
 void Reset_Handler(void);
 void Default_Handler(void);
 
-void HardFault_Handler(void)            __attribute__((weak, alias("Default_Handler"), nothrow));
-void MemManage_Handler(void)            __attribute__((weak, alias("Default_Handler"), nothrow));
-void BusFault_Handler(void)             __attribute__((weak, alias("Default_Handler"), nothrow));
-void UsageFault_Handler(void)           __attribute__((weak, alias("Default_Handler"), nothrow));
-void SVCall_Handler(void)               __attribute__((weak, alias("Default_Handler"), nothrow));
-void DebugMonitor_Handler(void)         __attribute__((weak, alias("Default_Handler"), nothrow));
-void PendSV_Handler(void)               __attribute__((weak, alias("Default_Handler"), nothrow));
-void Systick_Handler(void)              __attribute__((weak, alias("Default_Handler"), nothrow));
-void WWDG_Handler(void)                 __attribute__((weak, alias("Default_Handler"), nothrow));
-void PVD_Handler(void)                  __attribute__((weak, alias("Default_Handler"), nothrow));
-void TAMP_STAMP_Handler(void)           __attribute__((weak, alias("Default_Handler"), nothrow));
-void RTC_WKUP_Handler(void)             __attribute__((weak, alias("Default_Handler"), nothrow));
-void FLASH_Handler(void)                __attribute__((weak, alias("Default_Handler"), nothrow));
-void RCC_Handler(void)                  __attribute__((weak, alias("Default_Handler"), nothrow));
-void EXTI0_Handler(void)                __attribute__((weak, alias("Default_Handler"), nothrow));
-void EXTI1_Handler(void)                __attribute__((weak, alias("Default_Handler"), nothrow));
-void EXTI2_Handler(void)                __attribute__((weak, alias("Default_Handler"), nothrow));
-void EXTI3_Handler(void)                __attribute__((weak, alias("Default_Handler"), nothrow));
-void EXTI4_Handler(void)                __attribute__((weak, alias("Default_Handler"), nothrow));
-void DMA1_Stream0_Handler(void)         __attribute__((weak, alias("Default_Handler"), nothrow));
-void DMA1_Stream1_Handler(void)         __attribute__((weak, alias("Default_Handler"), nothrow));
-void DMA1_Stream2_Handler(void)         __attribute__((weak, alias("Default_Handler"), nothrow));
-void DMA1_Stream3_Handler(void)         __attribute__((weak, alias("Default_Handler"), nothrow));
-void DMA1_Stream4_Handler(void)         __attribute__((weak, alias("Default_Handler"), nothrow));
-void DMA1_Stream5_Handler(void)         __attribute__((weak, alias("Default_Handler"), nothrow));
-void DMA1_Stream6_Handler(void)         __attribute__((weak, alias("Default_Handler"), nothrow));
-void ADC_Handler(void)                  __attribute__((weak, alias("Default_Handler"), nothrow));
-void CAN1_TX_Handler(void)              __attribute__((weak, alias("Default_Handler"), nothrow));
-void CAN1_RX0_Handler(void)             __attribute__((weak, alias("Default_Handler"), nothrow));
-void CAN1_RX1_Handler(void)             __attribute__((weak, alias("Default_Handler"), nothrow));
-void CAN1_SCE_Handler(void)             __attribute__((weak, alias("Default_Handler"), nothrow));
-void EXTI9_5_Handler(void)              __attribute__((weak, alias("Default_Handler"), nothrow));
-void TIM1_BRK_TIM9_Handler(void)        __attribute__((weak, alias("Default_Handler"), nothrow));
-void TIM1_UP_TIM10_Handler(void)        __attribute__((weak, alias("Default_Handler"), nothrow));
-void TIM1_TRG_COM_TIM11_Handler(void)   __attribute__((weak, alias("Default_Handler"), nothrow));
-void TIM1_CC_Handler(void)              __attribute__((weak, alias("Default_Handler"), nothrow));
-void TIM2_Handler(void)                 __attribute__((weak, alias("Default_Handler"), nothrow));
-void TIM3_Handler(void)                 __attribute__((weak, alias("Default_Handler"), nothrow));
-void TIM4_Handler(void)                 __attribute__((weak, alias("Default_Handler"), nothrow));
-void I2C1_EV_Handler(void)              __attribute__((weak, alias("Default_Handler"), nothrow));
-void I2C1_ER_Handler(void)              __attribute__((weak, alias("Default_Handler"), nothrow));
-void I2C2_EV_Handler(void)              __attribute__((weak, alias("Default_Handler"), nothrow));
-void I2C2_ER_Handler(void)              __attribute__((weak, alias("Default_Handler"), nothrow));
-void SPI1_Handler(void)                 __attribute__((weak, alias("Default_Handler"), nothrow));
-void SPI2_Handler(void)                 __attribute__((weak, alias("Default_Handler"), nothrow));
-void USART1_Handler(void)               __attribute__((weak, alias("Default_Handler"), nothrow));
-void USART2_Handler(void)               __attribute__((weak, alias("Default_Handler"), nothrow));
-void USART3_Handler(void)               __attribute__((weak, alias("Default_Handler"), nothrow));
-void EXTI15_10_Handler(void)            __attribute__((weak, alias("Default_Handler"), nothrow));
-void RTC_Alarm_Handler(void)            __attribute__((weak, alias("Default_Handler"), nothrow));
-void OTG_FS_WKUP_Handler(void)          __attribute__((weak, alias("Default_Handler"), nothrow));
-void TIM8_BRK_TIM12_Handler(void)       __attribute__((weak, alias("Default_Handler"), nothrow));
-void TIM8_UP_TIM13_Handler(void)        __attribute__((weak, alias("Default_Handler"), nothrow));
-void TIM8_TRG_COM_TIM14_Handler(void)   __attribute__((weak, alias("Default_Handler"), nothrow));
-void TIM8_CC_Handler(void)              __attribute__((weak, alias("Default_Handler"), nothrow));
-void DMA1_Stream7_Handler(void)         __attribute__((weak, alias("Default_Handler"), nothrow));
-void FSMC_Handler(void)                 __attribute__((weak, alias("Default_Handler"), nothrow));
-void SDIO_Handler(void)                 __attribute__((weak, alias("Default_Handler"), nothrow));
-void TIM5_Handler(void)                 __attribute__((weak, alias("Default_Handler"), nothrow));
-void SPI3_Handler(void)                 __attribute__((weak, alias("Default_Handler"), nothrow));
-void UART4_Handler(void)                __attribute__((weak, alias("Default_Handler"), nothrow));
-void UART5_Handler(void)                __attribute__((weak, alias("Default_Handler"), nothrow));
-void TIM6_DAC_Handler(void)             __attribute__((weak, alias("Default_Handler"), nothrow));
-void TIM7_Handler(void)                 __attribute__((weak, alias("Default_Handler"), nothrow));
-void DMA2_Stream0_Handler(void)         __attribute__((weak, alias("Default_Handler"), nothrow));
-void DMA2_Stream1_Handler(void)         __attribute__((weak, alias("Default_Handler"), nothrow));
-void DMA2_Stream2_Handler(void)         __attribute__((weak, alias("Default_Handler"), nothrow));
-void DMA2_Stream3_Handler(void)         __attribute__((weak, alias("Default_Handler"), nothrow));
-void DMA2_Stream4_Handler(void)         __attribute__((weak, alias("Default_Handler"), nothrow));
-void ETH_Handler(void)                  __attribute__((weak, alias("Default_Handler"), nothrow));
-void ETH_WKUP_Handler(void)             __attribute__((weak, alias("Default_Handler"), nothrow));
-void CAN2_TX_Handler(void)              __attribute__((weak, alias("Default_Handler"), nothrow));
-void CAN2_RX0_Handler(void)             __attribute__((weak, alias("Default_Handler"), nothrow));
-void CAN2_RX1_Handler(void)             __attribute__((weak, alias("Default_Handler"), nothrow));
-void CAN2_SCE_Handler(void)             __attribute__((weak, alias("Default_Handler"), nothrow));
-void OTG_FS_Handler(void)               __attribute__((weak, alias("Default_Handler"), nothrow));
-void DMA2_Stream5_Handler(void)         __attribute__((weak, alias("Default_Handler"), nothrow));
-void DMA2_Stream6_Handler(void)         __attribute__((weak, alias("Default_Handler"), nothrow));
-void DMA2_Stream7_Handler(void)         __attribute__((weak, alias("Default_Handler"), nothrow));
-void USART6_Handler(void)               __attribute__((weak, alias("Default_Handler"), nothrow));
-void I2C3_EV_Handler(void)              __attribute__((weak, alias("Default_Handler"), nothrow));
-void I2C3_ER_Handler(void)              __attribute__((weak, alias("Default_Handler"), nothrow));
-void OTG_HS_EP1_OUT_Handler(void)       __attribute__((weak, alias("Default_Handler"), nothrow));
-void OTG_HS_EP1_IN_Handler(void)        __attribute__((weak, alias("Default_Handler"), nothrow));
-void OTG_HS_WKUP_Handler(void)          __attribute__((weak, alias("Default_Handler"), nothrow));
-void OTG_HS_Handler(void)               __attribute__((weak, alias("Default_Handler"), nothrow));
-void DCMI_Handler(void)                 __attribute__((weak, alias("Default_Handler"), nothrow));
-void CRYP_Handler(void)                 __attribute__((weak, alias("Default_Handler"), nothrow));
-void HASH_RNG_Handler(void)             __attribute__((weak, alias("Default_Handler"), nothrow));
-void FPU_Handler(void)                  __attribute__((weak, alias("Default_Handler"), nothrow));
-void UART7_Handler(void)                __attribute__((weak, alias("Default_Handler"), nothrow));
-void UART8_Handler(void)                __attribute__((weak, alias("Default_Handler"), nothrow));
-void SPI4_Handler(void)                 __attribute__((weak, alias("Default_Handler"), nothrow));
-void SPI5_Handler(void)                 __attribute__((weak, alias("Default_Handler"), nothrow));
-void SPI6_Handler(void)                 __attribute__((weak, alias("Default_Handler"), nothrow));
-void SAI1_Handler(void)                 __attribute__((weak, alias("Default_Handler"), nothrow));
-void LCDTFT_Handler(void)               __attribute__((weak, alias("Default_Handler"), nothrow));
-void LCDTFTglobal_Handler(void)         __attribute__((weak, alias("Default_Handler"), nothrow));
-void DMA2D_Handler(void)                __attribute__((weak, alias("Default_Handler"), nothrow));
+#ifdef __cplusplus
+}
+#endif
+/* Function definitions */
+
+[[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void HardFault_Handler(void);
+[[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void MemManage_Handler(void);
+[[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void BusFault_Handler(void);
+[[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void UsageFault_Handler(void);
+[[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void SVCall_Handler(void);
+[[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void DebugMonitor_Handler(void);
+[[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void PendSV_Handler(void);
+[[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void Systick_Handler(void);
+[[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void WWDG_Handler(void);                  
+[[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void PVD_Handler(void);                  
+[[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void TAMP_STAMP_Handler(void);            
+[[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void RTC_WKUP_Handler(void);              
+[[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void FLASH_Handler(void);                
+[[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void RCC_Handler(void);                   
+[[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void EXTI0_Handler(void);                 
+[[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void EXTI1_Handler(void);                 
+[[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void EXTI2_Handler(void);                 
+[[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void EXTI3_Handler(void);                 
+[[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void EXTI4_Handler(void);                 
+[[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void DMA1_Stream0_Handler(void);          
+[[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void DMA1_Stream1_Handler(void);          
+[[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void DMA1_Stream2_Handler(void);          
+[[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void DMA1_Stream3_Handler(void);          
+[[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void DMA1_Stream4_Handler(void);          
+[[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void DMA1_Stream5_Handler(void);          
+[[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void DMA1_Stream6_Handler(void);          
+[[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void ADC_Handler(void);                   
+[[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void CAN1_TX_Handler(void);               
+[[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void CAN1_RX0_Handler(void);              
+[[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void CAN1_RX1_Handler(void);              
+[[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void CAN1_SCE_Handler(void);              
+[[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void EXTI9_5_Handler(void);              
+[[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void TIM1_BRK_TIM9_Handler(void);         
+[[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void TIM1_UP_TIM10_Handler(void);         
+[[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void TIM1_TRG_COM_TIM11_Handler(void);    
+[[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void TIM1_CC_Handler(void);               
+[[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void TIM2_Handler(void);                 
+[[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void TIM3_Handler(void);                  
+[[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void TIM4_Handler(void);                  
+[[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void I2C1_EV_Handler(void);               
+[[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void I2C1_ER_Handler(void);               
+[[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void I2C2_EV_Handler(void);               
+[[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void I2C2_ER_Handler(void);               
+[[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void SPI1_Handler(void);                  
+[[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void SPI2_Handler(void);                  
+[[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void USART1_Handler(void);                
+[[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void USART2_Handler(void);                
+[[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void USART3_Handler(void);                
+[[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void EXTI15_10_Handler(void);             
+[[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void RTC_Alarm_Handler(void);             
+[[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void OTG_FS_WKUP_Handler(void);           
+[[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void TIM8_BRK_TIM12_Handler(void);       
+[[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void TIM8_UP_TIM13_Handler(void);         
+[[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void TIM8_TRG_COM_TIM14_Handler(void);    
+[[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void TIM8_CC_Handler(void);               
+[[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void DMA1_Stream7_Handler(void);          
+[[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void FSMC_Handler(void);                  
+[[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void SDIO_Handler(void);                  
+[[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void TIM5_Handler(void);                  
+[[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void SPI3_Handler(void);                  
+[[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void UART4_Handler(void);                 
+[[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void UART5_Handler(void);                 
+[[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void TIM6_DAC_Handler(void);             
+[[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void TIM7_Handler(void);                 
+[[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void DMA2_Stream0_Handler(void);          
+[[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void DMA2_Stream1_Handler(void);          
+[[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void DMA2_Stream2_Handler(void);          
+[[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void DMA2_Stream3_Handler(void);          
+[[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void DMA2_Stream4_Handler(void);          
+[[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void ETH_Handler(void);                  
+[[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void ETH_WKUP_Handler(void);             
+[[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void CAN2_TX_Handler(void);               
+[[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void CAN2_RX0_Handler(void);              
+[[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void CAN2_RX1_Handler(void);              
+[[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void CAN2_SCE_Handler(void);              
+[[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void OTG_FS_Handler(void);                
+[[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void DMA2_Stream5_Handler(void);          
+[[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void DMA2_Stream6_Handler(void);          
+[[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void DMA2_Stream7_Handler(void);          
+[[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void USART6_Handler(void);               
+[[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void I2C3_EV_Handler(void);              
+[[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void I2C3_ER_Handler(void);               
+[[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void OTG_HS_EP1_OUT_Handler(void);        
+[[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void OTG_HS_EP1_IN_Handler(void);         
+[[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void OTG_HS_WKUP_Handler(void);           
+[[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void OTG_HS_Handler(void);                
+[[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void DCMI_Handler(void);                  
+[[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void CRYP_Handler(void);                  
+[[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void HASH_RNG_Handler(void);              
+[[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void FPU_Handler(void);                   
+[[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void UART7_Handler(void);                 
+[[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void UART8_Handler(void);                 
+[[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void SPI4_Handler(void);                  
+[[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void SPI5_Handler(void);                  
+[[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void SPI6_Handler(void);                  
+[[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void SAI1_Handler(void);                  
+[[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void LCDTFT_Handler(void);                
+[[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void LCDTFT_ERR_Handler(void);            
+[[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void DMA2D_Handler(void);                 
 
 extern std::uint32_t _estack;
 extern std::uint32_t _etext;
@@ -125,15 +129,6 @@ extern std::uint32_t _eccram;
 extern std::uint32_t _sbss;
 extern std::uint32_t _ebss;
 
-//extern void __libc_init_array();
-//extern void __libc_fini_array();
-
-#ifdef __cplusplus
-}
-#endif
-
-//extern void SystemInit();
-//extern void SystemCoreClockUpdate();
 
 std::uint32_t vectors[] __attribute__((section(".isr_vector"))) = {
   STACK_START,
@@ -240,12 +235,13 @@ std::uint32_t vectors[] __attribute__((section(".isr_vector"))) = {
   (std::uint32_t)&SPI6_Handler,         
   (std::uint32_t)&SAI1_Handler,      
   (std::uint32_t)&LCDTFT_Handler,           
-  (std::uint32_t)&LCDTFTglobal_Handler,     
+  (std::uint32_t)&LCDTFT_ERR_Handler,     
   (std::uint32_t)&DMA2D_Handler           
 };
 
 void Reset_Handler(void){
-  /* Copy .data section to RAM */
+
+  /* Copy .data section from ROM (FLASH) to RAM, copy one byte at a time */
   std::uint32_t size = (std::uint32_t)&_edata - (std::uint32_t)&_sdata;
   std::uint8_t *dst = (std::uint8_t*)&_sdata; // RAM
   std::uint8_t *src = (std::uint8_t*)&_sidata; // FLASH
@@ -260,12 +256,14 @@ void Reset_Handler(void){
     *dst++ = 0;
   }
 
+  /* Init stuff for standard lib */
   __libc_init_array();
 
-  system_init();
+  SystemInit();
   /* Call main */
   main();
 
+  /* Fini stuff for standard lib */
   __libc_fini_array();
 
 }
