@@ -1,5 +1,16 @@
-#include "homa_base.h"
+/* 
 
+This file contains some start up code for the microcontroller. Here we:
+
+1. Weakly defines the different fault handlers
+2. Defines the ISR vector
+3. Define the reset handler
+4. Define the default handler
+
+*/
+
+
+#include "homa_base.h"
 
 extern int main();
 extern void SystemInit();
