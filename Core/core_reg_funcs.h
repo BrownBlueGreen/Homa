@@ -4,7 +4,7 @@
 #ifndef __CORE_REG_FUNCS_H
 #define __CORE_REG_FUNCS_H
 
-#include "homa_base.h"
+#include "base_types.h"
 
 /* ignore some GCC warnings */
 #if defined ( __GNUC__ )

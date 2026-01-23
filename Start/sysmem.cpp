@@ -1,4 +1,3 @@
-#include "homa_base.h"
 
 /* 
 This function is taken from here: https://github.com/STMicroelectronics/STM32CubeF4/blob/master/Projects/STM32F429ZI-Nucleo/Examples/BSP/STM32CubeIDE/Example/User/sysmem.c
@@ -12,6 +11,8 @@ This function is taken from here: https://github.com/STMicroelectronics/STM32Cub
 dynamic memory is allocated starting from the end of the _end linker symbol
 
 */
+
+#include "base_types.h"
 
 #ifdef __cplusplus
 extern "C" {

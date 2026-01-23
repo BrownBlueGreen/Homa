@@ -4,9 +4,11 @@
   */  
   
 
-#include "memory_map.h"
+#include "system_mmap.h"
 
-
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 void SystemInit();
 void SystemCoreClockUpdate();
@@ -368,3 +370,7 @@ void SystemInit_ExtMemCtl(void)
 /**
   * @}
   */
+
+#ifdef __cplusplus
+}
+#endif

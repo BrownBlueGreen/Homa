@@ -1,35 +1,23 @@
-/* 
 
-This file contains some start up code for the microcontroller. Here we:
-
-1. Weakly defines the different fault handlers
-2. Defines the ISR vector
-3. Define the reset handler
-4. Define the default handler
-
-*/
-
-
-#include "homa_base.h"
-
-extern int main();
-extern void SystemInit();
-extern void SystemCoreClockUpdate();
+#include "base_types.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+extern int main();
+extern void SystemInit();
+extern void SystemCoreClockUpdate();
 extern void __libc_init_array();
 extern void __libc_fini_array();
-void Reset_Handler(void);
+[[gnu::noreturn]] void Reset_Handler(void);
 void Default_Handler(void);
 
 #ifdef __cplusplus
 }
 #endif
-/* Function definitions */
 
+/* Function definitions */
 [[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void HardFault_Handler(void);
 [[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void MemManage_Handler(void);
 [[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void BusFault_Handler(void);
@@ -37,7 +25,7 @@ void Default_Handler(void);
 [[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void SVCall_Handler(void);
 [[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void DebugMonitor_Handler(void);
 [[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void PendSV_Handler(void);
-[[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void Systick_Handler(void);
+[[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void SysTick_Handler(void);
 [[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void WWDG_Handler(void);                  
 [[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void PVD_Handler(void);                  
 [[gnu::weak, gnu::alias("Default_Handler"), gnu::nothrow]] void TAMP_STAMP_Handler(void);            
@@ -135,13 +123,13 @@ extern std::uint32_t _etext;
 extern std::uint32_t _sdata;
 extern std::uint32_t _sidata;
 extern std::uint32_t _edata;
-extern std::uint32_t _sccram;
-extern std::uint32_t _eccram;
+extern std::uint32_t _sccmram;
+extern std::uint32_t _eccmram;
 extern std::uint32_t _sbss;
 extern std::uint32_t _ebss;
 
 
-std::uint32_t vectors[] __attribute__((section(".isr_vector"))) = {
+const std::uint32_t vectors[] __attribute__((used, section(".isr_vector"), aligned(256))) = {
   STACK_START,
   (std::uint32_t)&Reset_Handler,
   (std::uint32_t)&HardFault_Handler,
@@ -156,7 +144,7 @@ std::uint32_t vectors[] __attribute__((section(".isr_vector"))) = {
   (std::uint32_t)&DebugMonitor_Handler,        
   0,
   (std::uint32_t)&PendSV_Handler,             
-  (std::uint32_t)&Systick_Handler,           
+  (std::uint32_t)&SysTick_Handler,           
   (std::uint32_t)&WWDG_Handler,          
   (std::uint32_t)&PVD_Handler,                  
   (std::uint32_t)&TAMP_STAMP_Handler,         
@@ -250,32 +238,39 @@ std::uint32_t vectors[] __attribute__((section(".isr_vector"))) = {
   (std::uint32_t)&DMA2D_Handler           
 };
 
-void Reset_Handler(void){
+[[gnu::noreturn]] void Reset_Handler(void){
 
   /* Copy .data section from ROM (FLASH) to RAM, copy one byte at a time */
   std::uint32_t size = (std::uint32_t)&_edata - (std::uint32_t)&_sdata;
   std::uint8_t *dst = (std::uint8_t*)&_sdata; // RAM
   std::uint8_t *src = (std::uint8_t*)&_sidata; // FLASH
-  for(std::uint32_t i = 0; i < size; i++){
-    *dst++ = *src++;
-  }
+  __builtin_memcpy(dst, src, size);
+  // for(std::uint32_t i = 0; i < size; i++){
+  //   *dst++ = *src++;
+  // }
 
   /* Init the .bss section to 0 */
   size = (std::uint32_t)&_ebss - (std::uint32_t)&_sbss;
   dst = (std::uint8_t*)&_sbss;
-  for(std::uint32_t i = 0; i < size; i++){
-    *dst++ = 0;
-  }
+  __builtin_memset(dst, 0, size);
+  // for(std::uint32_t i = 0; i < size; i++){
+  //   *dst++ = 0;
+  // }
+
+  /* Init system clock tree and stuff */
+  SystemInit();
 
   /* Init stuff for standard lib */
   __libc_init_array();
 
-  SystemInit();
-  /* Call main */
-  main();
+  /* Call main, cast to void to avoid warnings of not using return value */
+  (void)main();
+  
+  /* Function is a noreturn */
+  while (1) { }
 
   /* Fini stuff for standard lib */
-  __libc_fini_array();
+  // __libc_fini_array();
 
 }
 

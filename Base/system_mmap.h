@@ -9,6 +9,7 @@ stm32f429xx.h file
 
 */
 
+#pragma once 
 
 #ifndef __MEMORYMAP_H
 #define __MEMORYMAP_H
@@ -144,7 +145,7 @@ enum IRQn_Type
   */
 
 #include "core_mmap.h"             /* Cortex-M4 processor and core peripherals */
-
+#include "base_types.h"
 
 /** @addtogroup Peripheral_registers_structures
   * @{

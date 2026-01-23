@@ -153,12 +153,12 @@ SECTIONS {
   } >RAM
 
   /* DISCARD gets rid of sections not included in the script from these libs, also maybe removes these from the final elf? */
-  /DISCARD/ :
+  /*/DISCARD/ :
   {
     libc.a (*)
     libm.a (*)
     libgcc.a ( * )
-  }
+  }*/
 
   .ARM.attributes 0 : { *(.ARM.attributes)}
 }

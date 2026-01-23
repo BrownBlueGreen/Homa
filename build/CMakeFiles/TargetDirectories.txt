@@ -1,0 +1,3 @@
+/Users/babakkhorsand/Desktop/HOMA/build/CMakeFiles/final.elf.dir
+/Users/babakkhorsand/Desktop/HOMA/build/CMakeFiles/edit_cache.dir
+/Users/babakkhorsand/Desktop/HOMA/build/CMakeFiles/rebuild_cache.dir

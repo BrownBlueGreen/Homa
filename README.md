@@ -3,26 +3,18 @@ DATE:   09/23/2024
 
 PROJECT HOMA VERSION 0.3
 
-This project is for a real time operating system for ARM microcontrollers. 
-
-Starting with ARM F429 and potentially moving onto other platforms. 
+This project is for a real time operating system for (potentially) ARM microcontrollers. Starting with STMF429 
 
 The project is an exercise in system design and software engineering. It's a learning tool. And the goal is to develop an operating system in C++, first as an RTOS and then maybe onto a more general operating system for something like an mp157.
 
-Why C++? Becuase I think it would be cool to have tasks as classes and to encapsulate peripherals in classes, kind of like arduino. There isn't a need per se, just for fun. 
-
-gpio_a LED_PIN(some channel);
-LED_PIN.enable()
-LED_PIN.disable();
-
-Kind of like arduino
+Why C++? Becuase I think it would be cool. :D
 
 # SOME FOUNDATIONAL STUFF
-If you have some source and header files, and want to turn it into something that does stuff (an executable) you have to compile it. For microcontrollers and single board computers, you have to use a cross compilation tool chain. This means that you compile the program on your local (or remote) machine and the download it to the microcontroller. This is because the uC doesn't have a compiler on it (single board computer might have a compiler).
+If you have some source and header files, and want to turn it into something that does stuff (an executable) you have to compile it. For microcontrollers and single board computers, you have to use a cross compilation tool chain. This means that you compile the program on your local (or remote) machine and the download it to the device (microcontroller). This is because the uC doesn't have a compiler on it (single board computer might have a compiler).
 
 The toolchain generally comes with binaries to compile, assembly, link, analyze, and debug applications. 
 
-For ARM, 2 toolchains available: GCC and ARMCC. GCC is free so going with that, ARMCC is partly free but for everything you have to pay for a license. The name of the actual toolchain I'm using is GNU-ARM-TOOLCHAIN from here: https://developer.arm.com/downloads/-/arm-gnu-toolchain-downloads, which contains the gnu-arm-embedded-toolchain plus some other stuff. 
+For ARM, 2 toolchains available: GCC and ARMCC. GCC is free so I'm going with that, ARMCC is partly free but I think you have to pay for a license. The name of the actual toolchain I'm using is GNU-ARM-TOOLCHAIN from here: https://developer.arm.com/downloads/-/arm-gnu-toolchain-downloads, which contains the gnu-arm-embedded-toolchain plus some other stuff. 
 
 Let go over the basics of the toolchain:
 
@@ -44,7 +36,7 @@ arm-none-eabi-nm
 # FORMAT CONVERTER
 arm-none-eabi-objcopy
 
-There's a bunch of other tools and libraries and such that I'm ignoring. 
+There's a bunch of other tools and libraries and won't be covered here. 
 
 # BUILD PROCESS:
 When you call the compiler it goes through the following stages:
@@ -52,7 +44,7 @@ When you call the compiler it goes through the following stages:
 1. Preprocessing: 
 Here all preprocessor directives will be resolved, like #include. The output file with ending .i will be created. So main.c --> main.i
 
-**** Between 1. and 2. Parsing is also done where there's C syntax checks.
+**** Between 1. and 2. Parsing happens too where there's C syntax checks.
 
 2. Code generation stage:
 Here source file like main.i will be converted to assembly language. High level code statements are converted to processor architectural mnemonics. This is thumb or AArch32/64 instructions. This produces a file with .s ending. So main.i --> main.s
@@ -63,7 +55,7 @@ Here processor mnemonics are converted to opcodes, this is machine code. This ou
 main.o is architecture specific machine code with no absolute addresses, hence why it's called "relocatable". You can't see the .i and .s files  unless you specifically request it. 
 
 4. Linking stage:
-Here all the .o files are taken by the linker, which resolves all the symbols and merges the obect files into a single executable. The output of this stage is a file with ending .elf. So *.o --> main.elf. elf stands for executable and linkable format. elf files can the be converted to other formats like .bin
+Here all the .o files are taken by the linker, which resolves all the symbols and merges the obect files into a single executable. The output of this stage is a file with ending .elf. So main.o --> main.elf. ELF stands for executable and linkable format. elf files can the be converted to other formats like .bin
 
 And that's it! The general process goes: preprocess --> compilation --> linking. And just calling arm-none-eabi-gcc/g++ does all of this. But if you want you can do each indivitually or ask the program to save the inbetween files. 
 
@@ -211,9 +203,9 @@ Call the linker to link all the .o files into an .elf
 
 # DEBUGGING
 
-When wanting to donwload the executable or debug our taget, we need to use a debug adaptor. Debug adaptor converts the host protocol to the target protocol, so that these two machines can talk to each other. For example usb <--> SWD/JTAG, and on the host you have to run an application like openOCD.
+When downloading the executable or debug to our taget, we need to use a debug adaptor. Debug adaptor converts the host protocol to the target protocol, so that these two machines can talk to each other. For example usb <--> SWD/JTAG, and on the host you have to run an application like openOCD.
 
-OpenOCD --> open on chip debugger. It's free and ope  source and lets you debug your applcations using GDB. And GBD works with ARM machines. So the whole picture looks something like this:
+OpenOCD --> open on chip debugger. It's free and open source and lets you debug your applcations using GDB. And GBD works with ARM machines. So the whole picture looks something like this:
 
 User <--> GDB Client <--> OpenOCD <--> ST-LINK driver <--> debug adapter <--> Target board. 
 
@@ -248,18 +240,41 @@ Once the conection is successful, you can issue commands such as:
 Now you can issue any number of command like "read a word at X address", or set a break point, etc..
 
 # USING LIBRARIES 
-I will be linking the newlib_nano library for basic support of C/C++ features. For C++ exceptions and RTTI are not supported unless it's specifically enabled. The library that's used depends on the spec file that's passed to the linker. Why do we want a library, well so some hardware independent parts of standard library that depend on low level system call. NOTE, YOU HAVE TO PROVIDE THOSE SYSTEM CALLS. Otherwise the standard lib functions don't do anything. These are system calls for stuff like devices, files, etc..
+I will be linking the newlib_nano library for basic features. C++ exceptions and RTTI are not supported. The library that's used depends on the spec file that's passed to the linker, you need to locate the spec file that's specific to your scenario. Why do we want a library? Well some hardware independent parts of the standard library depend on low level system calls, and the libary implements these things for us. NOTE, YOU HAVE TO PROVIDE THOSE SYSTEM CALLS. Otherwise the standard lib functions don't do anything. These are system calls for stuff like devices, files, etc..
 
-For example, if you call printf in your code, that library function that function does a bunch of formatting and then calls _write(). Then _write will output to some port like UART or something else. These a bunch of syscalls you'll have to implement. 
+For example, if you call printf in your code, that library function does a bunch of formatting and then calls _write(). Then _write will output to some port like UART or something else. There's a bunch of syscalls you'll have to implement. 
 
 Implementation for this was taken from ST github account for stm32f429. the link is in one of the files. 
 
-Ok here the basics of baremetal startup and getting the exectution to main is complete. The next things to do to define system_init and some basic hardware files. 
+Ok the basics of baremetal startup and getting the exectution to main was covered. The next things to do to define system_init and some basic hardware files. 
 
-These should include a bunch of macros and copmiler stuff that I won't do by hand it's too much work, plus it has specifics i don't know about. 
+These should include a bunch of macros and copmiler stuff that I won't do by hand b/c it's too much work, plus it has specifics I don't know about. 
 
-Other stuff to do later:
+# Start and Core FILES
+Let's go over the Start files and what they do. All the core files implement so base stuff that the microcontroller needs to get started. 
 
-Write kernel
-Write some basic data structs b/c i don't want to use c++ stdlib
-Write prepipheral driverse, make it threadsafe 
+1. startup.cpp:
+  This file defines the following:
+
+    1. All the fault and interrupt handlers, which are weakly defined and set to the default handler. Weakly defined means you can overwrite them.
+    2. Defines the ISR vector. This maps the appropriate memory addresses to the correct handlers defined earlier. 
+    3. The reset handler function. This is called whenever the controller boots or resets.
+    4. The default handler, which is just a while(1) loop. 
+
+2. syscalls.cpp:
+  This file defines all the different syscalls necessary that will be used by the standard lib. 
+
+3. sysmem.cpp:
+  This file defines the _sbrk function which is called when dynamically allocating data.
+
+4. system.h:
+  This file defines several macros for setting/clearing bits and atomic operations. 
+
+
+Next is the core files. These are files that are specific to ARM chips, the define both the registers that are specific to ARM controllers (not just ST chips) and the functions and assembly code to manipulate these registers. 
+
+1. core_mmap.h:
+  This defines all registers
+
+2. core_reg_funcs.h:
+  This file defines functions that set/clear values to the registers defined in core_mmap.h
