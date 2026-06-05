@@ -7,7 +7,7 @@ well that's pretty much ALL the pins of the chip... And here's where you'd be co
 you would set the alternative function register of said pin to what you want. 
 */
 
-#include "memory_map.h"
+#include "system_mmap.h"
 
 #DEFINE MODER 0     /*!< GPIO port mode register,               Address offset: 0x00      */
 #DEFINE OTYPER 4    /*!< GPIO port output type register,        Address offset: 0x04      */

@@ -13,86 +13,45 @@ extern "C" {
 void SystemInit();
 void SystemCoreClockUpdate();
 
-/** @addtogroup STM32F4xx_System_Private_TypesDefinitions
-  * @{
-  */
-
-/**
-  * @}
-  */
-
-/** @addtogroup STM32F4xx_System_Private_Defines
-  * @{
-  */
 
 /************************* Miscellaneous Configuration ************************/
-/*!< Uncomment the following line if you need to use external SDRAM mounted
-     on the EVAL as data memory  */
+
+/*!< Uncomment the following line if you need to use external SDRAM mounted on the EVAL as data memory  */
 /* #define DATA_IN_ExtSDRAM */ 
 
-/*!< Uncomment the following line if you need to relocate your vector Table in
-     Internal SRAM. */
+/*!< Uncomment the following line if you need to relocate your vector Table in Internal SRAM. */
 /* #define VECT_TAB_SRAM */
+
 #define VECT_TAB_OFFSET  0x00 /*!< Vector Table base offset field. This value must be a multiple of 0x200. */
+
 /******************************************************************************/
 
-/**
-  * @}
-  */
 
-/** @addtogroup STM32F4xx_System_Private_Macros
-  * @{
-  */
-
-/**
-  * @}
-  */
-
-/** @addtogroup STM32F4xx_System_Private_Variables
-  * @{
-  */
-  /* This variable is updated in three ways:
-      1) by calling CMSIS function SystemCoreClockUpdate()
-      2) by calling HAL API function HAL_RCC_GetHCLKFreq()
-      3) each time HAL_RCC_ClockConfig() is called to configure the system clock frequency 
-         Note: If you use this function to configure the system clock; then there
-               is no need to call the 2 first functions listed above, since SystemCoreClock
-               variable is updated automatically.
-  */
+/* This variable is updated in three ways:
+    1) by calling CMSIS function SystemCoreClockUpdate()
+    2) by calling HAL API function HAL_RCC_GetHCLKFreq()
+    3) each time HAL_RCC_ClockConfig() is called to configure the system clock frequency 
+        Note: If you use this function to configure the system clock; then there
+              is no need to call the 2 first functions listed above, since SystemCoreClock
+              variable is updated automatically.
+*/
 uint32_t SystemCoreClock = 16000000;
 const uint8_t AHBPrescTable[16] = {0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4, 6, 7, 8, 9};
 const uint8_t APBPrescTable[8]  = {0, 0, 0, 0, 1, 2, 3, 4};
-/**
-  * @}
-  */
-
-/** @addtogroup STM32F4xx_System_Private_FunctionPrototypes
-  * @{
-  */
 
 #if defined (DATA_IN_ExtSDRAM)
   static void SystemInit_ExtMemCtl(void); 
 #endif /* DATA_IN_ExtSDRAM */
 
-/**
-  * @}
-  */
 
-/** @addtogroup STM32F4xx_System_Private_Functions
-  * @{
-  */
-
-/**
-  * @brief  Setup the microcontroller system
-  *         Initialize the FPU setting, vector table location and External memory 
-  *         configuration.
-  * @param  None
-  * @retval None
-  */
+/*
+* Setup the microcontroller system:
+*   Initialize the FPU setting, vector table location and External memory 
+*   configuration.
+*/
 
 void SystemInit()
 {
-
   /* FPU settings ------------------------------------------------------------*/
   #if (__FPU_PRESENT == 1) && (__FPU_USED == 1)
     SCB->CPACR |= ((3UL << 10*2)|(3UL << 11*2));  /* set CP10 and CP11 Full Access */
@@ -128,42 +87,41 @@ void SystemInit()
 #endif
 }
 
-/**
-   * @brief  Update SystemCoreClock variable according to Clock Register Values.
-  *         The SystemCoreClock variable contains the core clock (HCLK), it can
-  *         be used by the user application to setup the SysTick timer or configure
-  *         other parameters.
-  *           
-  * @note   Each time the core clock (HCLK) changes, this function must be called
-  *         to update SystemCoreClock variable value. Otherwise, any configuration
-  *         based on this variable will be incorrect.         
-  *     
-  * @note   - The system frequency computed by this function is not the real 
-  *           frequency in the chip. It is calculated based on the predefined 
-  *           constant and the selected clock source:
-  *             
-  *           - If SYSCLK source is HSI, SystemCoreClock will contain the HSI_VALUE(*)
-  *                                              
-  *           - If SYSCLK source is HSE, SystemCoreClock will contain the HSE_VALUE(**)
-  *                          
-  *           - If SYSCLK source is PLL, SystemCoreClock will contain the HSE_VALUE(**) 
-  *             or HSI_VALUE(*) multiplied/divided by the PLL factors.
-  *         
-  *         (*) HSI_VALUE is a constant defined in stm32f4xx_hal_conf.h file (default value
-  *             16 MHz) but the real value may vary depending on the variations
-  *             in voltage and temperature.   
-  *    
-  *         (**) HSE_VALUE is a constant defined in stm32f4xx_hal_conf.h file (its value
-  *              depends on the application requirements), user has to ensure that HSE_VALUE
-  *              is same as the real frequency of the crystal used. Otherwise, this function
-  *              may have wrong result.
-  *                
-  *         - The result of this function could be not correct when using fractional
-  *           value for HSE crystal.
-  *     
-  * @param  None
-  * @retval None
-  */
+/*
+Update SystemCoreClock variable according to Clock Register Values.
+The SystemCoreClock variable contains the core clock (HCLK), it can
+be used by the user application to setup the SysTick timer or configure
+other parameters.
+           
+Each time the core clock (HCLK) changes, this function must be called
+to update SystemCoreClock variable value. Otherwise, any configuration
+based on this variable will be incorrect.         
+     
+-The system frequency computed by this function is not the real 
+frequency in the chip. It is calculated based on the predefined 
+constant and the selected clock source:
+             
+- If SYSCLK source is HSI, SystemCoreClock will contain the HSI_VALUE(*)
+                                              
+- If SYSCLK source is HSE, SystemCoreClock will contain the HSE_VALUE(**)
+                        
+- If SYSCLK source is PLL, SystemCoreClock will contain the HSE_VALUE(**) 
+or HSI_VALUE(*) multiplied/divided by the PLL factors.
+        
+HSI_VALUE is a constant defined in stm32f4xx_hal_conf.h file (default value
+16 MHz) but the real value may vary depending on the variations
+in voltage and temperature.   
+    
+HSE_VALUE is a constant defined in stm32f4xx_hal_conf.h file (its value
+depends on the application requirements), user has to ensure that HSE_VALUE
+is same as the real frequency of the crystal used. Otherwise, this function
+may have wrong result.
+              
+The result of this function could be not correct when using fractional
+value for HSE crystal.    
+
+*/
+
 void SystemCoreClockUpdate()
 {
   uint32_t tmp = 0, pllvco = 0, pllp = 2, pllsource = 0, pllm = 2;
@@ -213,14 +171,13 @@ void SystemCoreClockUpdate()
 }
 
 #if defined (DATA_IN_ExtSDRAM)
-/**
-  * @brief  Setup the external memory controller.
-  *         Called in startup_stm32f4xx.s before jump to main.
-  *         This function configures the external memories (SDRAM)
-  *         This SDRAM will be used as program data memory (including heap and stack).
-  * @param  None
-  * @retval None
-  */
+/*
+Setup the external memory controller.
+Called in startup_stm32f4xx.s before jump to main.
+This function configures the external memories (SDRAM)
+This SDRAM will be used as program data memory (including heap and stack).
+*/
+
 void SystemInit_ExtMemCtl(void)
 {
   register uint32_t tmpreg = 0, timeout = 0xFFFF;
@@ -358,18 +315,6 @@ void SystemInit_ExtMemCtl(void)
   FMC_Bank5_6->SDCR[0] = (tmpreg & 0xFFFFFDFF);
 }
 #endif /* DATA_IN_ExtSDRAM */
-
-/**
-  * @}
-  */
-
-/**
-  * @}
-  */
-
-/**
-  * @}
-  */
 
 #ifdef __cplusplus
 }

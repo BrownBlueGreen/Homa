@@ -245,17 +245,11 @@ const std::uint32_t vectors[] __attribute__((used, section(".isr_vector"), align
   std::uint8_t *dst = (std::uint8_t*)&_sdata; // RAM
   std::uint8_t *src = (std::uint8_t*)&_sidata; // FLASH
   __builtin_memcpy(dst, src, size);
-  // for(std::uint32_t i = 0; i < size; i++){
-  //   *dst++ = *src++;
-  // }
 
   /* Init the .bss section to 0 */
   size = (std::uint32_t)&_ebss - (std::uint32_t)&_sbss;
   dst = (std::uint8_t*)&_sbss;
   __builtin_memset(dst, 0, size);
-  // for(std::uint32_t i = 0; i < size; i++){
-  //   *dst++ = 0;
-  // }
 
   /* Init system clock tree and stuff */
   SystemInit();
@@ -268,9 +262,6 @@ const std::uint32_t vectors[] __attribute__((used, section(".isr_vector"), align
   
   /* Function is a noreturn */
   while (1) { }
-
-  /* Fini stuff for standard lib */
-  // __libc_fini_array();
 
 }
 

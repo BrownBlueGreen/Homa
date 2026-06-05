@@ -18,23 +18,8 @@ stm32f429xx.h file
 extern "C" {
 #endif /* __cplusplus */
 
-/** @addtogroup Core_Configuration
-  * @{
-  */
-
-/**
-  * @brief Configuration of the Cortex-M4 Processor and Core Peripherals
-  */
-
-
-
-/** @addtogroup Peripheral_interrupt_number_definition
-  * @{
-  */
-
-/**
- * @brief STM32F4XX Interrupt Number Definition, according to the selected device
- *        in @ref Library_configuration_section
+/*
+ * STM32F4XX Interrupt Number Definition, according to the selected device
  */
 enum IRQn_Type
 {
@@ -146,10 +131,6 @@ enum IRQn_Type
 
 #include "core_mmap.h"             /* Cortex-M4 processor and core peripherals */
 #include "base_types.h"
-
-/** @addtogroup Peripheral_registers_structures
-  * @{
-  */
 
 /**
   * @brief Analog to Digital Converter

@@ -13,9 +13,10 @@
 
 # pragma once
 
-#define RAM_SIZE  (192 * 1000) /* 192KB */
-#define RAM_START 0x20000000U
-#define RAM_END   (RAM_START + RAM_SIZE)
+/* BASE MEMORY ADDRESSES */
+#define RAM_SIZE    (192 * 1000) /* 192KB */
+#define RAM_START   0x20000000U
+#define RAM_END     (RAM_START + RAM_SIZE)
 #define STACK_START RAM_END
 
 #define __CORTEX_M                (0x04U)                                      /*!< Cortex-M Core */
@@ -25,7 +26,7 @@
 #define __Vendor_SysTickConfig    0U       /*!< Set to 1 if different SysTick Config is used  */
 #define __FPU_PRESENT             1U       /*!< FPU present                                   */
 
-/** __FPU_USED indicates whether an FPU is used or not.
+/* __FPU_USED indicates whether an FPU is used or not.
     For this, __FPU_PRESENT has to be checked prior to making use of FPU specific registers and functions.
 */
 
