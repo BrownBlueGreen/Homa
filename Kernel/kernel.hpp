@@ -289,61 +289,24 @@ void osSemaphoreWait(int32_t* semaphore) {
   __enable_irq();
 }
 
-/* NEED TO MAKE GLOBAL KERNEL OBJECT */
+#define PC  STACK_SIZE - 2
+#define SP  STACK_SIZE - 16
+#define PSR STACK_SIZE - 1
+#define LR  STACK_SIZE - 3  
+#define R12 STACK_SIZE - 4  
+#define R3  STACK_SIZE - 5 
+#define R2  STACK_SIZE - 6 
+#define R1  STACK_SIZE - 7 
+#define R0  STACK_SIZE - 8 
+#define R11 STACK_SIZE - 9 
+#define R10 STACK_SIZE - 10 
+#define R9  STACK_SIZE - 11  
+#define R8  STACK_SIZE - 12
+#define R7  STACK_SIZE - 13 
+#define R6  STACK_SIZE - 14 
+#define R5  STACK_SIZE - 15 
+#define R4  STACK_SIZE - 16 
 
-/* NOW DEFINE THE TIM2 INTERRUPT HANDLER AND THIS IS CALLED BY THE INTERRUPT */
-extern "C" void TIM2_IRQHandler() {
-  /* 1. CLEAR INTERRUPT FLAG */
-  CLEAR_BIT(TIM2->SR, TIM_SR_UIF);
-
-  /* 2. KERNEL TICK */
-  kernel.onOsTick();
-
-  /* 5. CHECK FOR CONTEXT SWITCH AND SET PENDSV BIT */
-  if(kernel.schedule()) {
-    SET_BIT(SCB->ICSR, SCB_ICSR_PENDSVSET_Msk);
-  }
-}
-
-
-extern "C" [[gnu::naked]] void PendSV_Handler() {
-  /* 1. SUSPEND THE CURRENT THREAD */
-
-  /* DISABLE GLOBAL INTERRUPTS */
-  __asm("CPSID  I");
-
-  /* SAVE R4, R5, R6, R7, R8, R9, R10, R11 ONTO THE STACK */
-  __asm("PUSH {R4-R11}");
-
-  /* LOAD ADDRESS OF curr_thread_ptr INTO R0 */
-  __asm("LDR R0, =curr_thread_ptr");
-
-  /* LOAD R1 from address equals R0, ie, r1 = current thread ptr */
-  __asm("LDR R1,[R0]");
-
-  /* STORE CORTEX-M SP at address = R1, ie. SAVE SP INTO TCB */
-  __asm("STR SP,[R1]");
-
-  /* 2. CHOOSE THE NEXT THREAD */
-
-  /* LOAD R1 FROM A LOCATION 4 BYTES ABOVE R1, ie, R1 = current_thread_ptr->next */
-  __asm("LDR R1,[R1,4]");
-
-  /* STORE R1 AT ADDRESS = R0 ie current-thread-ptr = r1, WE'RE UPDATING THE CURRENT_THREAD_PTR */
-  __asm("STR R1, [R0]");
-
-  /*  LOAD THE CORTEX-M STACK POINTER SP FROM ADDRESS = R1, SP = current_thread_ptr -> stackPt */
-  __asm("LDR SP,[R1]");
-
-  /* LOAD REGISTERS CONSISTING OF THIS THREADS STACK FRAME */
-  __asm("POP {R4-R11}");
-
-  /* ENABLE GLOBAL INTERRUPTS */
-  __asm("CPSIE  I");
-
-  /* RETURN FROM EXCEPTION AND RESTORE STACK FRAME */
-  __asm("BX    LR")
-}
 
 enum class Status { READY, RUNNING, WAITING, BLOCKED };
 
@@ -357,50 +320,129 @@ struct TCB {
   uint32_t  remainingTicks_;
 }
 
+
+struct RoundRobin {
+  static void schedule(Kernel& k) {
+    nextTask_
+  }
+}
+
+struct PreemptivePriority {
+  static void schedule(Kernel& k) {
+    /* Need to do a few things
+    1. Push current task either onto correct ready queue, waiting queue, or blocked queue
+    2. Choose next task as the next highest available priority
+    3. Return
+    */
+
+    /* CHECK running task state */
+    if runningTask_->status_ == State::BLOCKED {
+      /* No blocked tasks */
+      if(blockedTasks_.head_ == nullptr) {
+        blockedTasks_.head_ = runningTask_;
+        blockedTasks_.tail_ = blockedTasks_.head_;
+      }
+      else {
+        blockedTasks_.tail_->next_ = runningTask_;
+        blockedTasks_.tail_ = blockedTasks_.tail_->next;
+      }
+    }
+    else if runningTask_->status_ == State::WAITING {
+      if(waitingTasks.head_ == nullptr) {
+        waitingTasks.head_ = runningTask_;
+        waitingTasks.tail_ = waitingTasks.head_;
+      }
+      else {
+        waitingTasks.tail_->next_ = runningTask_;
+        waitingTasks.tail_ = waitingTasks.tail_->.next;
+      }
+    }
+    else {
+      if(runningQueues[runningTask_->priority].head_ == nullptr) {
+        runningQueues[runningTask_->priority].head_ = runningTask_;
+        runningQueues[runningTask_->priority].tail_ = runningQueues[runningTask_->priority].head_;
+      }
+      else {
+        runningQueues[runningTask_->priority].tail_->next_ = runningTask_;
+        runningQueues[runningTask_->priority].tail_ = runningQueues[runningTask_->priority].tail_->.next;
+      }
+    }
+
+    /* Loop through the ready queues for each priority, and find the highest priority to run */
+    /* REPLACE THIS WITH A BITMASK */
+    for(int i = 0; i < 8; i++) {
+      if (readyQueues[i].head_ != nullptr) {
+        nextTask_ = readyQueues[i].head_;
+        if (readyQueues[i].head_ == readyQueues[i].tail_) {
+          readyQueues[i].head_ = readyQueues[i].tail_ = nullptr;
+        }
+        else{
+          readyQueues[i].head_ = readyQueues[i].head_->next_;
+        }
+
+        nextTask_.status_ = Status::RUNNING;
+      }
+    }
+  }
+}
+
+struct EarliestDeadline {
+  static void schedule(Kernel& k);
+}
+
 template <SchedulerPolicy P, uint32_t N, uint32_t StackSize, uint32_t MaxPriorities>
 class Kernel final {
 
 private: 
-  Kernel() {
-    for(int i, i < N; i++) {
-      tasks[i].next_ = &tasks[(i + 1) % N];
-    }
+  /* Kernel status */
+  enum class State  { UNINITIALIZED, INITIALIZED, RUNNING, STOPPED };
 
+  Kernel() {
+    for(int i = 0, i < N; i++) {
+      tasks_[i].next_ = &tasks_[(i + 1) % N];
+    }
     msPrescaler = (BUS_FREQ / 1000); /* 1 millisecond tick time */
   }
 
   ~Kernel() = default;
 
-  TCB tasks[N];
-  TCB* readyQueue_[N];
-  TCB* blockedQueue_[N];
-  TCB* waitingQueue_[N];
-  TCB* nextTask_ = nullptr;
-  TCB* runningTask_ = nullptr;
+  struct taskList {
+    TCB* head_ = nullptr;
+    TCB* tail_ = nullptr;
+  }
 
-  TBC_STACK[N][StackSize];
+  TCB tasks_[N];                 /* Raw array of TCB's for roundrobin */
+  TCB* runningTask_ = nullptr;  /* Pointer to the runnig TCB Task */
+  TCB* nextTask_ = nullptr;     /* Pointer to the next task to be run */
+  taskList readyQueues[8]_;     /* Array of taskList structs, each array element represents a priority level */
+  taskList waitingTasks_;       /* taskList struct of waiting tasks */
+  taskList blockedTasks_;       /* taskList struct of blocked tasks */
 
-  State kernelState     = State::Uninitialized;
+  TBC_STACK[N][StackSize];      /* Stack of all tasks */
+
+  State kernelState     = State::UNINITIALIZED;
   uint32_t osTicks      = 0;
   uint16_t numTasks     = 0;
   uint16_t msPrescaler  = 0;
 
 public:
+
+  /* Deleted constructors */
   Kernel(const Kernel&)             = delete;
   Kernel& operator=(const Kernel&)  = delete;
   Kernel(Kernel&&)                  = delete;
   Kernel& operator=(Kernel&&)       = delete;
 
-  enum class State { Uninitialized, Initialized, Running };
 
+  /* This launches the scheduler, meaning it sets up the runningTask to begin execution */
   [[gnu::naked]] void schedulerLaunch() {
     /* LOAD ADDRESS OF CURRENT_THREAD_PT INTO R0 */
-    __asm("LDR R0, =runningThread_");
+    __asm("LDR R0, =runningTask_");
 
     /* LOAD R2 FROM ADDRESS = R0 */
     __asm("LDR R2, [R0]");
 
-    /* LOAD CORTEX-M STACK POINTER FROM R2, ie. SP = runningThread_->stack_ptr */
+    /* LOAD CORTEX-M STACK POINTER FROM R2, ie. SP = runningTask_->stack_ptr */
     __asm("LDR SP, [R2]");
 
     /* RESTORE MANUAL REGISTERS */
@@ -425,8 +467,8 @@ public:
     __asm("BX   LR");
   }  
 
-  void launch(uint32_t quanta) {
-    if(kernelState != State::Initialized) return;
+  void kernelLaunch(uint32_t quanta) {
+    if(kernelState != State::UNINITIALIZED) return;
     
     /* ENABLE CLOCK ACCESS TO TIM2 */
     SET_BIT(RCC->APB1EN, RCC_APB1RSTR_TIM2RST);
@@ -453,40 +495,42 @@ public:
     /* ENABLE TIMER INTERRUPT IN NVIC */
     NVIC_EnableIRQ(TIM2_IRQn);
 
-    osSchedulerLaunch();
+    if (runningTask_ == nullptr) runningTask_ = tasks_[0];
+    schedulerLaunch();
 
-    kernelState = State::Running;
+    kernelState = State::RUNNING;
 
   }
 
   void init() {
-    if (kernelState != State::Uninitialized) return;
-    kernelState = State::Initialized;
+    if (kernelState != State::UNINITIALIZED) return;
+    kernelState = State::INITIALIZED;
   }
 
-  /* Function creates a singleton instance of the class */
   static Kernel& getInstance(uint32_t quanta) {
     static Kernel() instance;
     return instance;
   }
 
-  void createTask(void(*task)(void), uint32_t i, uint32_t priority, uint32_t burst_time, bool isStart = false) {
+  /* Function to add task to scheduler */
+  void createTask(void(*task_func)(void), uint32_t i, uint32_t priority, uint32_t burst_time, bool isStart = false) {
     if (i >= N) return;
     if (p >= MaxPriorities) p = MaxPriorities;
-    if (kernelState != State::Initialized) return;
+    if (kernelState != State::INITIALIZED) return;
 
     __disable_irq();
     
-    /* Initialize PC by setting entry point and initialize stack */
-    osKernelStackInit(i);
-    TCB_STACK[i][STACK_SIZE - 2] = (int32_t)task;
+    /* Initialize the stack and set PC (STACK_SIZE - 2) to address of task function*/
+    initializeTaskStack(i);           
+    TCB_STACK[i][PC] = (int32_t)task_func;
 
-    tasks[i].status_ = Status::READY;
-    tasks[i].priority_ = priority;
-    tasks[i].burst_time_ = burst_time;
+    tasks_[i].status_ = Status::READY;
+    tasks_[i].priority_ = priority;
+    tasks_[i].burst_time_ = burst_time;
 
     if (isStart) {
-      runningThread_ = (int32_t)task;
+      runningTask_ = &tasks_[i];
+      // runningTask_ = (int32_t)task;
     }
 
     numTasks += 1;
@@ -501,34 +545,30 @@ public:
     if (i >= N) return;
 
     /* First initialize the stack pointer */
-    tasks[i].stack_ptr_ = &TCB_STACK[i][STACK_SIZE - 16];
+    tasks_[i].stack_ptr_ = &TCB_STACK[i][SP];
 
-    /* 
-    Set bit 21 of PSR register to 1 to set it to thumb mode. 
-    */
-    TCB_STACK[i][STACK_SIZE - 1] = (1U << 24);
+    /* Set bit 21 of PSR register to 1 to set it to thumb mode. */
+    TCB_STACK[i][PSR] = (1U << 24);
 
-    /* 
-    For each thread you want to initialize the stack frame this means you put dummy values 
-    in all the locations. Up to position 8 is the actual stack frame. Setting up a dummy frame
-    is optional though. 
-    */
-    TCB_STACK[i][STACK_SIZE - 3] = 0xAAAAAAAA; /* R14 i.e. LR register */
-    TCB_STACK[i][STACK_SIZE - 4] = 0xAAAAAAAA; /* R12 */
-    TCB_STACK[i][STACK_SIZE - 5] = 0xAAAAAAAA; /* R3 */
-    TCB_STACK[i][STACK_SIZE - 6] = 0xAAAAAAAA; /* R2 */
-    TCB_STACK[i][STACK_SIZE - 7] = 0xAAAAAAAA; /* R1 */
-    TCB_STACK[i][STACK_SIZE - 8] = 0xAAAAAAAA; /* R0 */
+    /* Initialize stack frame of task with dummy values. 
+    Up to position 8 is the actual stack frame. 
+    Setting up a dummy frame is optional but good practice.  */
+    TCB_STACK[i][LR]  = 0xAAAAAAAA; 
+    TCB_STACK[i][R12] = 0xAAAAAAAA; 
+    TCB_STACK[i][R3]  = 0xAAAAAAAA; 
+    TCB_STACK[i][R2]  = 0xAAAAAAAA; 
+    TCB_STACK[i][R1]  = 0xAAAAAAAA; 
+    TCB_STACK[i][R0]  = 0xAAAAAAAA; 
 
-    /* These registers are not preserved during a context switch. */
-    TCB_STACK[i][STACK_SIZE - 9] = 0xAAAAAAAA; /* R11 */
-    TCB_STACK[i][STACK_SIZE - 10] = 0xAAAAAAAA; /* R10 */
-    TCB_STACK[i][STACK_SIZE - 11] = 0xAAAAAAAA; /* R9 */
-    TCB_STACK[i][STACK_SIZE - 12] = 0xAAAAAAAA; /* R8 */
-    TCB_STACK[i][STACK_SIZE - 13] = 0xAAAAAAAA; /* R7 */
-    TCB_STACK[i][STACK_SIZE - 14] = 0xAAAAAAAA; /* R6 */
-    TCB_STACK[i][STACK_SIZE - 15] = 0xAAAAAAAA; /* R5 */
-    TCB_STACK[i][STACK_SIZE - 16] = 0xAAAAAAAA; /* R4 */
+    /* These registers are not preserved during a context switch. Good practice */
+    TCB_STACK[i][R11] = 0xAAAAAAAA; 
+    TCB_STACK[i][R10] = 0xAAAAAAAA; 
+    TCB_STACK[i][R9]  = 0xAAAAAAAA;
+    TCB_STACK[i][R8]  = 0xAAAAAAAA; 
+    TCB_STACK[i][R7]  = 0xAAAAAAAA; 
+    TCB_STACK[i][R6]  = 0xAAAAAAAA; 
+    TCB_STACK[i][R5]  = 0xAAAAAAAA; 
+    TCB_STACK[i][R4]  = 0xAAAAAAAA; 
   }
 
   void onOsTick() {
@@ -536,4 +576,67 @@ public:
     // Update tasks --> May need to change things like update waiting tasks and such 
   }
 
+  void schedule() {
+
+
+  }
+  
+}
+
+/* Global kernel object */
+Kernel kernel = Kernel::getInstance();
+
+/* TIM2 ISR handler, is periodically called and it sets the PendSV Bit to trigger context switch */
+extern "C" void TIM2_IRQHandler() {
+  /* 1. CLEAR INTERRUPT FLAG */
+  CLEAR_BIT(TIM2->SR, TIM_SR_UIF);
+
+  /* 2. KERNEL TICK */
+  kernel.onOsTick();
+
+  /* 5. CHECK FOR CONTEXT SWITCH AND SET PENDSV BIT */
+  if(kernel.schedule()) {
+    SET_BIT(SCB->ICSR, SCB_ICSR_PENDSVSET_Msk);
+  }
+}
+
+/* This PendSV ISR handler is what does the actual context switch */
+extern "C" [[gnu::naked]] void PendSV_Handler() {
+  /* 1. SUSPEND THE CURRENT THREAD */
+
+  /* DISABLE GLOBAL INTERRUPTS */
+  __asm("CPSID  I");
+
+  /* SAVE R4, R5, R6, R7, R8, R9, R10, R11 ONTO THE STACK */
+  __asm("PUSH {R4-R11}");
+
+  /* LOAD ADDRESS OF runningTask_ INTO R0 */
+  __asm("LDR R0, =runningTask_");
+
+  /* LOAD R1 from address equals R0, ie, r1 = runningTask_ */
+  __asm("LDR R1,[R0]");
+
+  /* STORE CORTEX-M SP at address = R1, ie. SAVE SP INTO TCB */
+  __asm("STR SP,[R1]");
+
+  /* 2. CHOOSE THE NEXT THREAD */
+
+  /* LOAD R1 FROM A LOCATION 4 BYTES ABOVE R1, ie, R1 = current_thread_ptr->next */
+  // __asm("LDR R1,[R1,4]");
+  __asm("LDR, R1, =nextTask_"); // double check this
+
+  /* STORE R1 AT ADDRESS = R0 ie current-thread-ptr = r1, WE'RE UPDATING THE CURRENT_THREAD_PTR */
+  __asm("STR R1, [R0]");
+
+  /*  LOAD THE CORTEX-M STACK POINTER SP FROM ADDRESS = R1, SP = current_thread_ptr -> stackPt */
+  __asm("LDR SP,[R1]");
+
+  /* LOAD REGISTERS CONSISTING OF THIS THREADS STACK FRAME */
+  __asm("POP {R4-R11}");
+
+  /* ENABLE GLOBAL INTERRUPTS */
+  __asm("CPSIE  I");
+
+  /* RETURN FROM EXCEPTION AND RESTORE STACK FRAME */
+  __asm("BX    LR")
 }
