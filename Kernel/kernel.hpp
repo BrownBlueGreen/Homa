@@ -86,7 +86,6 @@ private:
   alignas(8) uint32_t TCB_STACK[N][StackSize];    /* Stack of all tasks */
   alignas(8) uint32_t idleStack_[IDLE_STACK_WORDS];
 
-
   static void idleTaskFunc() { while(1) __WFI(); }
 
   /* sleep() helper */
@@ -169,7 +168,7 @@ private:
   void onTick() {
     osTicks_ += 1;
     expireDelayed();
-    schedule()
+    schedule();
     if(runningTask_ != nextTask_) {
       SCB->ICSR = SCB_ICSR_PENDSVSET_Msk;
       __DSB();
@@ -185,12 +184,15 @@ private:
 
   uint32_t* launchStackPtr() { return runningTask_->stack_ptr_; }
 
+  /* Caller of this function must initialize a CS! */
   void taskYield() {
     schedule();
     SCB->ICSR = SCB_ICSR_PENDSVSET_Msk;
     __DSB();
     __ISB();
   }
+  
+  
   /* NEED TO IMPLEMENT BLOCKED -> READY PATH, THIS HAPPENS WHEN 1. WRITING TO QUEUE, 2. SEM GIVE, 3. MUTEX GIVE */
 
 public:

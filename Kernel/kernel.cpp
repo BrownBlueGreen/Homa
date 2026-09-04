@@ -3,9 +3,9 @@
 
 auto& kernel = Kernel<8, 128, 8>::getInstance();
 
-extern "C" uint32_t* switchContext(uint32_t* sp) { return kernel.commitSwitch(sp); }
-extern "C" uint32_t* firstTaskStack() { return kernel.launchStackPtr(); }
-extern "C" void taskExitTrap() { __disable_irq(); for(;;){} }
+extern "C" uint32_t* switchContext(uint32_t* sp)  { return kernel.commitSwitch(sp); }
+extern "C" uint32_t* firstTaskStack()             { return kernel.launchStackPtr(); }
+extern "C" void taskExitTrap()                    { __disable_irq(); for(;;){} }
 
 /* This launches the scheduler, meaning it sets up the runningTask to begin execution */
 extern "C" [[gnu::naked]] void schedulerLaunch() {
