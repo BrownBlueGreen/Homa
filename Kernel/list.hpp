@@ -1,5 +1,6 @@
 
-
+#pragma once 
+#include <cstddef>
 
 template <class T, T* T::*Link>
 class IntrusiveList {

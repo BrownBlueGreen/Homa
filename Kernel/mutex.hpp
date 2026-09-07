@@ -1,3 +1,6 @@
+
+#pragma once
+
 #include "kernel.hpp"
 #include "list.hpp"
 #include <cassert>
@@ -12,17 +15,17 @@ public:
   void lock() {
     assertTaskContext();
     CriticalSection cs;
-    auto curr = kernel.currentTask();
+    auto curr = SchedulerServices::currentTask();
     assert(owner_ != curr && "recursive lock on a non-recursive index");
     
     while(owner_) {
       /* Need to raise priority of owner is the task attempting to lock is higher */
       if (owner_->priority_ > curr->priority_) {
         // priority of the owner is lower than current task
-        kernel.raisePriority(owner_, curr->priority_);
+        SchedulerServices::raisePriority(owner_, curr->priority_);
       }
       
-      kernel.taskBlock(waiters_);
+      SchedulerServices::block(waiters_);
       cs.reopen();
     }
     
@@ -34,7 +37,7 @@ public:
   bool tryLock() {
     assertTaskContext();
     CriticalSection cs;
-    auto curr = kernel.currentTask();
+    auto curr = SchedulerServices::currentTask();
     if (!owner_) {
       owner_ = curr;
       savedPriority_ = owner_->priority_;
@@ -51,15 +54,15 @@ public:
 
     assertTaskContext();
     CriticalSection cs;
-    auto curr = kernel.currentTask();
+    auto curr = SchedulerServices::currentTask();
 
-    uint32_t deadline = kernel.ticks() + static_cast<uint32_t>(timeout);
+    uint32_t deadline = SchedulerServices::ticks() + static_cast<uint32_t>(timeout);
     while(owner_) {
       if(owner_->priority_ > curr->priority_) {
-        kernel.raisePriority(owner_, curr->priority_);
+        SchedulerServices::raisePriority(owner_, curr->priority_);
       }
 
-      kernel.taskBlockUntil(waiters_, deadline);
+      SchedulerServices::blockUntil(waiters_, deadline);
       cs.reopen();
       if(curr->timedOut_ == true) {
         reevaluateBoost();
@@ -77,15 +80,15 @@ public:
   bool release() {
     assertTaskContext();
     CriticalSection cs;
-    auto curr = kernel.currentTask();
+    auto curr = SchedulerServices::currentTask();
 
     if (owner_ != curr) return false; /* Not the owner */
     if (owner_->priority_ != savedPriority_) {
-      kernel.restorePriority(owner_, savedPriority_);
+      SchedulerServices::restorePriority(owner_, savedPriority_); /* return task to original priority */
     }
 
     owner_ = nullptr;
-    kernel.taskUnblock(waiters_);
+    SchedulerServices::unblock(waiters_);
     return true;
   }
 
@@ -102,7 +105,7 @@ private:
       if (head->priority_ < target) target = head->priority_;
     }
 
-    kernel.setPriority(owner_, target);
+    SchedulerServices::setPriority(owner_, target);
   }
 
   uint32_t savedPriority_ = 0;

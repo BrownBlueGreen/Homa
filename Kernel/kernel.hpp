@@ -1,14 +1,8 @@
-/*
-TODO: Add task exit trap - forever loop to execute if a task fails out or returns when it's not supposed to
-TODO: Add synchoronization primitives + RUNNING -> BLOCKED FUNCTIONALITY 
-*/
-
 #pragma once 
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
 #include "list.hpp"
-#include "semaphore.hpp"
 
 #define BUS_FREQ    16000000
 #define KERNEL_PRIO 5U
@@ -24,8 +18,8 @@ extern "C" {
   uint32_t* switchContext(uint32_t* sp);
   uint32_t* firstTaskStack();
   [[gnu::naked]] void schedulerLaunch();
+  [[gnu::naked]] void PendSV_Handler();
   void SysTick_Handler();
-  void PendSV_Handler();
   void taskExitTrap();
 }
 
@@ -42,6 +36,11 @@ struct TCB {
   bool      timedOut_;
   IntrusiveList<TCB, &TCB::qnext_>* waitingOn_;
 };
+
+using ReadyList = IntrusiveList<TCB, &TCB::qnext_>; // using qnext pointer for ready and blocked tasks
+using DelayList = IntrusiveList<TCB, &TCB::dnext_>;
+
+struct SchedulerServices;
 
 /* 
 Instantiation of this class makes the current scope a critical section by disabling interrupts. 
@@ -71,8 +70,6 @@ private:
   uint32_t saved_;
 };
 
-class Semaphore;
-
 template <uint32_t N, uint32_t STACKSIZE, uint32_t MP>
 class Kernel final {
 
@@ -84,13 +81,10 @@ class Kernel final {
   friend uint32_t*  ::switchContext(uint32_t*);
   friend uint32_t*  ::firstTaskStack();
   friend void       ::taskExitTrap();
+
+  friend struct ::SchedulerServices;
   
-  friend class Semaphore;
-
 private: 
-
-  using ReadyList = IntrusiveList<TCB, &TCB::qnext_>; // using qnext pointer for ready and blocked tasks
-  using DelayList = IntrusiveList<TCB, &TCB::dnext_>;
 
   Kernel() {
     msPrescaler_ = (BUS_FREQ / 1000); /* 1 millisecond tick time */
@@ -201,7 +195,7 @@ private:
   }
 
   /* RUNNING -> BLOCKED PATH, Node: Calling function MUST create a CriticalSection! */
-  void taskBlock(IntrusiveList<TCB, &TCB::qnext_>& list){
+  void taskBlock(ReadyList& list){
     assert(runningTask_ != &idle_);
     runningTask_->state_ = TASKSTATE::BLOCKED;
     runningTask_->waitingOn_ = &list;
@@ -213,7 +207,7 @@ private:
     taskYield();
   }
 
-  void taskBlockUntil(IntrusiveList<TCB, &TCB::qnext_>& list, uint32_t deadline) {
+  void taskBlockUntil(ReadyList& list, uint32_t deadline) {
     assert(runningTask_ != &idle_);
     
     if ((int32_t)(osTicks_ - deadline) >= 0) {
@@ -238,7 +232,7 @@ private:
   }
 
   /* BLOCKED -> READY PATH*/
-  void taskUnblock(IntrusiveList<TCB, &TCB::qnext_>& list) {
+  void taskUnblock(ReadyList& list) {
     // You only want to notify highest priority task in the queue, ie the head
     TCB* task = list.popFront();
     if (task == nullptr) return;
@@ -401,10 +395,30 @@ public:
     taskYield();
   }
 
-  uint32_t ticks() { return osTicks_; }
-
-  const TCB* currentTask() { return runningTask_; }
+  TCB*      currentTask() noexcept { return runningTask_; }
+  uint32_t  ticks()       const noexcept { return osTicks_; }
 };
 
 // TODO: boosting priority down the chain. A blocks on Mutex x held by C, which itself is blocked on mutex y. The current owner 
 // of y should also get boosted. 
+
+
+/* 
+Whats the point of this? there isn't really any point. Just thought it would be convenient 
+to expose an interface if someone wanted to implement their own synchronization primitives
+or use some other datastructs that need kernel services. 
+
+*/
+struct SchedulerServices {
+  static uint32_t ticks()                           { return kernel.osTicks_; }
+  static TCB* currentTask()                         { return kernel.runningTask_; }
+  static void block(ReadyList& l)                   { return kernel.taskBlock(l); }
+  static void blockUntil(ReadyList& l, uint32_t d)  { return kernel.taskBlockUntil(l, d); }
+  static void unblock(ReadyList& l)                 { return kernel.taskUnblock(l); }
+  static void setPriority(TCB* t, uint32_t p)       { return kernel.setPriority(t, p); }
+  static void raisePriority(TCB* t, uint32_t p)     { return kernel.raisePriority(t, p); }
+  static void restorePriority(TCB* t, uint32_t p)   { return kernel.restorePriority(t, p); }
+};
+
+
+

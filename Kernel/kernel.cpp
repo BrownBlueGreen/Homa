@@ -1,15 +1,13 @@
 /* Global kernel object */
 #include "kernel.hpp"
 
-auto& kernel = Kernel<8, 128, 8>::getInstance();
+using OS = Kernel<8, 128, 8>;
+extern OS& kernel;
 
-extern "C" uint32_t*  switchContext(uint32_t* sp)  { return kernel.commitSwitch(sp); }
-extern "C" uint32_t*  firstTaskStack()             { return kernel.currStackPtr(); }
-extern "C" void       taskExitTrap()               { __disable_irq(); for(;;){} }
-
-extern "C" void SysTick_Handler() {
-  kernel.onTick();
-}
+extern "C" uint32_t*  switchContext(uint32_t* sp) { return kernel.commitSwitch(sp); }
+extern "C" uint32_t*  firstTaskStack()            { return kernel.currStackPtr(); }
+extern "C" void       taskExitTrap()              { __disable_irq(); for(;;){} }
+extern "C" void       SysTick_Handler()           { kernel.onTick(); }
 
 /* This launches the scheduler, meaning it sets up the runningTask to begin execution */
 extern "C" [[gnu::naked]] void schedulerLaunch() {
