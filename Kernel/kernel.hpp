@@ -8,6 +8,7 @@ TODO: Add synchoronization primitives + RUNNING -> BLOCKED FUNCTIONALITY
 #include <cstddef>
 #include <cstdint>
 #include "list.hpp"
+#include "semaphore.hpp"
 
 #define BUS_FREQ    16000000
 #define KERNEL_PRIO 5U
@@ -24,9 +25,11 @@ extern "C" {
   uint32_t* firstTaskStack();
   [[gnu::naked]] void schedulerLaunch();
   void SysTick_Handler();
+  void PendSV_Handler();
   void taskExitTrap();
 }
 
+/* Task control block */
 struct TCB {
   uint32_t* stack_ptr_;
   TCB*      qnext_;
@@ -40,6 +43,10 @@ struct TCB {
   IntrusiveList<TCB, &TCB::qnext_>* waitingOn_;
 };
 
+/* 
+Instantiation of this class makes the current scope a critical section by disabling interrupts. 
+When instance goes out of scope destructor re-enables interrupts and ends critical section.
+*/
 class CriticalSection final {
 public:
   CriticalSection() noexcept : saved_(__get_BASEPRI()) {
@@ -58,12 +65,13 @@ public:
     __ISB();
     __set_BASEPRI_MAX(KERNEL_PRIO << (8U - __NVIC_PRIO_BITS));
     __DSB(); __ISB();
-  
   }
 
 private:
   uint32_t saved_;
 };
+
+class Semaphore;
 
 template <uint32_t N, uint32_t STACKSIZE, uint32_t MP>
 class Kernel final {
@@ -98,6 +106,7 @@ private:
   uint16_t            numTasks_       = 0;
   TCB* volatile       runningTask_    = nullptr;
   TCB* volatile       nextTask_       = nullptr;
+  volatile uint32_t   osTicks_        = 0;
   KERNELSTATE         kernelState     = KERNELSTATE::UNINITIALIZED;
   
   alignas(8) uint32_t TCB_STACK[N][STACKSIZE];    /* Stack of all tasks */
@@ -166,6 +175,8 @@ private:
     idle_.burstTime_  = 0;
     idle_.wakeTick_   = 0;
     idle_.delayed_    = false;
+    idle_.waitingOn_  = nullptr;
+    idle_.timedOut_   = false;
   }
 
   /* General task work */
@@ -189,24 +200,40 @@ private:
     pend();
   }
 
-
   /* RUNNING -> BLOCKED PATH, Node: Calling function MUST create a CriticalSection! */
-  void taskBlock(IntrusiveList<TCB, &TCB::qnext_>& list, int32_t timeout){
+  void taskBlock(IntrusiveList<TCB, &TCB::qnext_>& list){
     assert(runningTask_ != &idle_);
     runningTask_->state_ = TASKSTATE::BLOCKED;
     runningTask_->waitingOn_ = &list;
+    runningTask_->timedOut_ = false; // this block is forever so this is going to be false
     list.insertSorted(runningTask_, [](const TCB* a, const TCB* b) {
       return a->priority_ < b->priority_;
     });
 
-    // If timeout == -1, then we don't want to add this to some delayed list, it'll be there forever. 
-    if (timeout >= 0) {
-      runningTask_->wakeTick_ = osTicks_ + timeout;
-      runningTask_->delayed_ = true; 
-      delayedTasks_.insertSorted(runningTask_, [](const TCB* a, const TCB* b) {
-        return (int32_t)(a->wakeTick_ - b->wakeTick_) < 0;
-      });
+    taskYield();
+  }
+
+  void taskBlockUntil(IntrusiveList<TCB, &TCB::qnext_>& list, uint32_t deadline) {
+    assert(runningTask_ != &idle_);
+    
+    if ((int32_t)(osTicks_ - deadline) >= 0) {
+      runningTask_->timedOut_ = true;
+      return;
     }
+
+    runningTask_->state_ = TASKSTATE::BLOCKED;
+    runningTask_->waitingOn_ = &list;
+    runningTask_->timedOut_ = false;
+    list.insertSorted(runningTask_, [](const TCB* a, const TCB* b) {
+      return a->priority_ < b->priority_;
+    });
+
+    runningTask_->wakeTick_ = deadline;
+    runningTask_->delayed_ = true;
+    delayedTasks_.insertSorted(runningTask_, [](const TCB* a, const TCB* b) {
+      return (int32_t)(a->wakeTick_ - b->wakeTick_) < 0;
+    });
+
     taskYield();
   }
 
@@ -224,21 +251,8 @@ private:
     task->timedOut_ = false;
     pushReady(task);
     if (task->priority_ < runningTask_->priority_) taskYield();
-  }
-
-  /* FOR ISR SIGNALING TO TASK */
-  void taskUnblockFromISR(IntrusiveList<TCB, &TCB::qnext_>& list) {
-    TCB* task = list.popFront();
-    if (task == nullptr) return;
-    
-    task->waitingOn_ = nullptr;
-    if(task->delayed_) {
-      delayedTasks_.remove(task);
-      task->delayed_ = false;
-    }
-    task->timedOut_ = false;
-    pushReady(task);
-    if (task->priority_ < runningTask_->priority_) taskYield();
+    // NOTE: taskYield() may cause a context switch to happen immediately. So the task that 
+    // calls taskUnblock can get switched out and then return back inside release() and continue.
   }
 
   /* sleep() helper */
@@ -247,6 +261,7 @@ private:
     runningTask_->wakeTick_ = tick;
     runningTask_->state_   = TASKSTATE::DELAYED; 
     runningTask_->delayed_  = true;
+    runningTask_->waitingOn_ = nullptr;
     delayedTasks_.insertSorted(runningTask_, [](const TCB* a, const TCB* b) {
       return (int32_t)(a->wakeTick_ - b->wakeTick_) < 0;
     });
@@ -267,7 +282,6 @@ private:
     }
   }
   
-
   /* DELAYED -> READY */
   void onTick() {
     osTicks_ += 1;
@@ -278,6 +292,31 @@ private:
     }
   }
 
+  void setPriority(TCB* task, uint32_t priority) {
+    if (task->priority_ == priority) return;
+    if (task->state_ == TASKSTATE::READY) {
+      readyLists_[task->priority_].remove(task);
+      if (readyLists_[task->priority_].empty()) readyMask_ &= ~(1U << task->priority_);
+      task->priority_ = priority;
+      pushReady(task);
+    } else if (task->state_ == TASKSTATE::BLOCKED && task->waitingOn_) {
+      task->waitingOn_->remove(task);
+      task->priority_ = priority;
+      task->waitingOn_->insertSorted(task, [](const TCB* a, const TCB* b) {
+      return a->priority_ < b->priority_;
+    });
+    } else {
+      task->priority_ = priority;
+    }
+  }
+
+  void raisePriority(TCB* owner, uint32_t new_priority) {
+    if (owner->priority_ > new_priority) setPriority(owner, new_priority);
+  }
+
+  void restorePriority(TCB* owner, uint32_t saved_priority) {
+    setPriority(owner, saved_priority);
+  }
 
 public:
 
@@ -291,7 +330,6 @@ public:
     static Kernel instance; 
     return instance; 
   }
-
 
   void init   () {
     if (kernelState != KERNELSTATE::UNINITIALIZED) return;
@@ -344,6 +382,8 @@ public:
     tasks_[i].burstTime_  = burst_time;
     tasks_[i].wakeTick_   = 0;
     tasks_[i].delayed_    = false;
+    tasks_[i].waitingOn_  = nullptr;
+    tasks_[i].timedOut_   = false;
 
     pushReady(&tasks_[i]);
 
@@ -361,6 +401,10 @@ public:
     taskYield();
   }
 
-  volatile uint32_t osTicks_ = 0;
+  uint32_t ticks() { return osTicks_; }
+
+  const TCB* currentTask() { return runningTask_; }
 };
 
+// TODO: boosting priority down the chain. A blocks on Mutex x held by C, which itself is blocked on mutex y. The current owner 
+// of y should also get boosted. 

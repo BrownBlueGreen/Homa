@@ -29,15 +29,15 @@ public:
   bool wait(int32_t timeout) {
     CriticalSection cs;
     uint32_t deadline; 
-    if (timeout > 0) deadline = kernel.osTicks_ + static_cast<uint32_t>(timeout);
+    if (timeout > 0) deadline = kernel.ticks() + static_cast<uint32_t>(timeout);
     while(count_ == 0) {
       if (timeout == 0) return false; // we're not blocking so return false b/c there's no room
       if (timeout > 0) {
-        int32_t remaining = static_cast<int32_t>(deadline - kernel.osTicks_);
+        int32_t remaining = static_cast<int32_t>(deadline - kernel.ticks());
         if (remaining <= 0) return false;
-        kernel.taskBlock(waiters_, remaining);
+        kernel.taskBlockUntil(waiters_, remaining);
       } else {
-        kernel.taskBlock(waiters_, -1);
+        kernel.taskBlock(waiters_);
       }
       cs.reopen();
       if (kernel.runningTask_->timedOut_) return false;
@@ -82,15 +82,15 @@ public:
   bool wait(int32_t timeout) {
     CriticalSection cs;
     uint32_t deadline; 
-    if (timeout > 0) deadline = kernel.osTicks_ + static_cast<uint32_t>(timeout);
+    if (timeout > 0) deadline = kernel.ticks() + static_cast<uint32_t>(timeout);
     while(count_ == 0) {
       if (timeout == 0) return false; // we're not blocking so return false b/c there's no room
       if (timeout > 0) {
-        int32_t remaining = static_cast<int32_t>(deadline - kernel.osTicks_);
+        int32_t remaining = static_cast<int32_t>(deadline - kernel.ticks());
         if (remaining <= 0) return false;
-        kernel.taskBlock(waiters_, remaining);
+        kernel.taskBlockUntil(waiters_, remaining);
       } else {
-        kernel.taskBlock(waiters_, -1);
+        kernel.taskBlock(waiters_);
       }
       cs.reopen();
       if (kernel.runningTask_->timedOut_) return false;

@@ -1,11 +1,15 @@
 /* Global kernel object */
-#inlcude "kernel.hpp"
+#include "kernel.hpp"
 
 auto& kernel = Kernel<8, 128, 8>::getInstance();
 
-extern "C" uint32_t* switchContext(uint32_t* sp)  { return kernel.commitSwitch(sp); }
-extern "C" uint32_t* firstTaskStack()             { return kernel.currStackPtr(); }
-extern "C" void taskExitTrap()                    { __disable_irq(); for(;;){} }
+extern "C" uint32_t*  switchContext(uint32_t* sp)  { return kernel.commitSwitch(sp); }
+extern "C" uint32_t*  firstTaskStack()             { return kernel.currStackPtr(); }
+extern "C" void       taskExitTrap()               { __disable_irq(); for(;;){} }
+
+extern "C" void SysTick_Handler() {
+  kernel.onTick();
+}
 
 /* This launches the scheduler, meaning it sets up the runningTask to begin execution */
 extern "C" [[gnu::naked]] void schedulerLaunch() {
@@ -13,7 +17,7 @@ extern "C" [[gnu::naked]] void schedulerLaunch() {
     "BL    firstTaskStack   \n"   // R0 = runningTask_->stack_ptr_
     "ADDS  R0, R0, #32      \n"   // skip the 8 dummy callee-saved words
     "MSR   PSP, R0          \n"   // PSP points at the hardware frame
-    "MOVS  R0, #2           \n"
+    "MOVS  R0, #2           \n"   
     "MSR   CONTROL, R0      \n"   // SPSEL=1: Thread mode uses PSP
     "ISB                    \n"   // mandatory after a CONTROL write
     "MOV   R1, #0           \n"
@@ -21,10 +25,6 @@ extern "C" [[gnu::naked]] void schedulerLaunch() {
     "LDR   R0, =0xFFFFFFFD  \n"   // EXC_RETURN: Thread, PSP, basic frame
     "BX    R0               \n"   // hardware unstacks and runs the task
   );
-}
-
-extern "C" void SysTick_Handler() {
-  kernel.onTick();
 }
 
 /* This PendSV ISR handler is what does the actual context switch */
